@@ -1,0 +1,92 @@
+#!/usr/bin/env node
+// Node.js服务器启动脚本 - 创建HTTP服务器并启动Express应用
+
+/**
+ * 引入模块依赖
+ */
+var app = require('../app');                      // 引入Express应用实例
+var debug = require('debug')('clwy-api:server'); // 调试工具，用于输出服务器相关调试信息
+var http = require('http');                       // Node.js HTTP模块，用于创建HTTP服务器
+
+/**
+ * 从环境变量获取端口号并存储到Express应用中
+ */
+var port = normalizePort(process.env.PORT || '3000');  // 获取端口号，默认3000
+app.set('port', port);                                 // 将端口号设置到Express应用实例中
+
+/**
+ * 创建HTTP服务器实例
+ */
+var server = http.createServer(app);  // 使用Express应用创建HTTP服务器
+
+/**
+ * 启动服务器监听指定端口
+ */
+server.listen(port);                  // 开始监听指定端口的HTTP请求
+server.on('error', onError);          // 绑定错误处理事件监听器
+server.on('listening', onListening);  // 绑定服务器启动成功事件监听器
+
+/**
+ * 端口号标准化函数
+ * 将端口值转换为数字、字符串或false
+ */
+function normalizePort(val) {
+  var port = parseInt(val, 10);  // 尝试将值转换为整数
+
+  if (isNaN(port)) {
+    // 如果不是数字，可能是命名管道(named pipe)
+    return val;
+  }
+
+  if (port >= 0) {
+    // 如果是有效的端口号（非负整数）
+    return port;
+  }
+
+  // 无效端口号
+  return false;
+}
+
+/**
+ * HTTP服务器错误事件监听器
+ * 处理服务器启动时可能出现的错误
+ */
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    // 如果不是监听相关的错误，直接抛出
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port      // 命名管道
+    : 'Port ' + port;     // 端口号
+
+  // 处理特定的监听错误，提供友好的错误信息
+  switch (error.code) {
+    case 'EACCES':
+      // 权限不足错误 - 通常是尝试绑定1024以下的端口需要管理员权限
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);  // 退出进程
+      break;
+    case 'EADDRINUSE':
+      // 端口已被占用错误
+      console.error(bind + ' is already in use');
+      process.exit(1);  // 退出进程
+      break;
+    default:
+      // 其他未知错误，直接抛出
+      throw error;
+  }
+}
+
+/**
+ * HTTP服务器"listening"事件监听器
+ * 服务器成功启动并开始监听时触发
+ */
+function onListening() {
+  var addr = server.address();  // 获取服务器地址信息
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr           // 命名管道地址
+    : 'port ' + addr.port;     // 端口号
+  debug('Listening on ' + bind);  // 输出调试信息，表示服务器启动成功
+}
